@@ -29,10 +29,10 @@ async function loadPlans() {
     { key: '1m', name: 'Mensuel', price: money(pr['1m'], pr.currency), unit: '/ mois', desc: 'La souplesse du mois par mois.', feats: ['Tout l’essai, sans limite de temps', 'Sauvegarde en ligne', 'Mises à jour incluses'], cta: 'Choisir le mensuel', hot: true },
     { key: '1y', name: 'Annuel', price: money(pr['1y'], pr.currency), unit: '/ an', desc: 'Le meilleur tarif à l’année.', feats: ['2 mois offerts* vs mensuel', 'Sauvegarde en ligne', 'Priorité au support'], cta: 'Choisir l’annuel', hot: false }
   ]
-  $('#plans').innerHTML = plans.map(p => `<div class="plan ${p.hot ? 'hot' : ''}">${p.hot ? '<span class="tag">Le plus choisi</span>' : ''}
+  $('#plans').innerHTML = plans.map(p => `<div class="plan ${p.hot ? 'hot' : ''}">${p.hot ? '<span class="tag2">Le plus choisi</span>' : ''}
     <h3>${p.name}</h3><div class="price">${p.price} ${p.price !== 'Gratuit' ? `<small>${p.unit}</small>` : `<small>${p.unit}</small>`}</div>
     <p class="desc">${p.desc}</p><ul>${p.feats.map(f => `<li>${f}</li>`).join('')}</ul>
-    <button class="btn ${p.hot ? 'btn-primary' : 'btn-out'}" data-plan="${p.key}">${p.cta}</button></div>`).join('')
+    <button class="btn ${p.hot ? 'btn-brand' : 'btn-light'}" data-plan="${p.key}">${p.cta}</button></div>`).join('')
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => openSignup(b.dataset.plan))
 }
 loadPlans()
@@ -70,7 +70,7 @@ function successView(r, plan) {
     <a class="btn btn-dark" style="width:100%;justify-content:center;gap:8px" href="${esc(DL)}"><img src="img/download.png" width="18" height="18" alt="">Télécharger le logiciel</a>
     ${payBtns}
     <p class="muted" style="margin-top:14px">Gardez ce code précieusement : il sert à activer chaque poste de votre clinique.</p>
-    <button class="btn btn-out" style="width:100%;justify-content:center;margin-top:6px" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button></div>`)
+    <button class="btn btn-light" style="width:100%;justify-content:center;margin-top:6px" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button></div>`)
   const pg = document.getElementById('pay-go')
   if (pg) pg.onclick = async () => {
     pg.disabled = true; pg.textContent = 'Redirection vers MonCash…'
