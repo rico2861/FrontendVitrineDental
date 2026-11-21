@@ -2,4 +2,4 @@
 // Pour un hébergement séparé, mettez l'URL complète, ex. 'https://dental-saas.up.railway.app'.
 window.DL_API = ''
 // Lien de téléchargement du logiciel (release GitHub ou fichier hébergé).
-window.DL_DOWNLOAD = 'https://github.com/rico2861/dental-light-app/releases/latest'
+window.DL_DOWNLOAD = 'https://github.com/rico2861/Dental/releases/latest'

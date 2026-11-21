@@ -1,4 +1,4 @@
-// ═══ DENTAL LIGHT — Vitrine (logique) ═══════════════════════════════════════
+// ═══ DENTAL — Vitrine (logique) ═══════════════════════════════════════
 const API = (window.DL_API || '').replace(/\/+$/, '')
 const DL = window.DL_DOWNLOAD || '#'
 const $ = s => document.querySelector(s)
@@ -8,17 +8,17 @@ const money = (n, c = 'HTG') => new Intl.NumberFormat('fr-FR').format(n) + ' ' +
 
 // ── Fonctionnalités ──
 const FEATURES = [
-  ['🦷', 'Patients & dossiers', 'Fiches complètes, antécédents, schéma dentaire (odontogramme), documents et consentements.'],
-  ['📅', 'Rendez-vous & salle d’attente', 'Agenda, file d’attente en temps réel, rappels et suivi des présences.'],
-  ['🧾', 'Facturation multi-devises', 'Devis, factures, encaissements, taux du jour, dettes et relances.'],
-  ['💵', 'Caisse', 'Mouvements, transferts, clôture de caisse et dépenses, par compte.'],
-  ['📦', 'Stock & prothèses', 'Suivi du matériel, commandes, et gestion des travaux de laboratoire.'],
-  ['👥', 'Paie & commissions', 'Salaires, commissions par praticien, déductions et revisions.'],
-  ['📊', 'Rapports PDF & Excel', 'Tableaux de bord, statistiques, exports pour la comptabilité.'],
-  ['🔐', 'Sécurité renforcée', 'Rôles, permissions, 2FA, journal d’audit, chiffrement des données.'],
-  ['☁️', 'Sauvegardes', 'Copies automatiques locales et en ligne, récupérables en un clic.']
+  ['patients', 'Patients & dossiers', 'Fiches complètes, antécédents, schéma dentaire (odontogramme), documents et consentements.'],
+  ['calendar', 'Rendez-vous & salle d’attente', 'Agenda, file d’attente en temps réel, rappels et suivi des présences.'],
+  ['billing', 'Facturation multi-devises', 'Devis, factures, encaissements, taux du jour, dettes et relances.'],
+  ['caisse', 'Caisse', 'Mouvements, transferts, clôture de caisse et dépenses, par compte.'],
+  ['stock', 'Stock & prothèses', 'Suivi du matériel, commandes, et gestion des travaux de laboratoire.'],
+  ['payroll', 'Paie & commissions', 'Salaires, commissions par praticien, déductions et revisions.'],
+  ['reports', 'Rapports PDF & Excel', 'Tableaux de bord, statistiques, exports pour la comptabilité.'],
+  ['security', 'Sécurité renforcée', 'Rôles, permissions, 2FA, journal d’audit, chiffrement des données.'],
+  ['backups', 'Sauvegardes', 'Copies automatiques locales et en ligne, récupérables en un clic.']
 ]
-$('#feat-grid').innerHTML = FEATURES.map(([i, t, d]) => `<div class="feat"><div class="ic" style="font-size:22px">${i}</div><h3>${t}</h3><p>${d}</p></div>`).join('')
+$('#feat-grid').innerHTML = FEATURES.map(([i, t, d]) => `<div class="feat"><div class="ic"><img src="img/${i}.png" width="26" height="26" alt=""></div><h3>${t}</h3><p>${d}</p></div>`).join('')
 
 // ── Tarifs (depuis le backend) ──
 async function loadPlans() {
@@ -64,10 +64,10 @@ function successView(r, plan) {
     ? `<p class="muted" style="margin-top:14px">Vous avez choisi la formule ${plan === '1y' ? 'annuelle' : 'mensuelle'}. Payez maintenant avec MonCash (ou plus tard depuis le logiciel) :</p>
        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" id="pay-go">Payer avec MonCash</button>`
     : ''
-  modal(`<div class="success"><h3>🎉 Votre essai est prêt</h3>
+  modal(`<div class="success"><h3 style="display:flex;align-items:center;gap:8px"><img src="img/check.png" width="24" height="24" alt=""> Votre essai est prêt</h3>
     <p class="muted">Voici le code d’activation de votre clinique. Entrez-le dans le logiciel pour débloquer vos 15 jours gratuits.</p>
     <div class="code">${esc(r.activation_code)}</div>
-    <a class="btn btn-dark" style="width:100%;justify-content:center" href="${esc(DL)}">⬇ Télécharger le logiciel</a>
+    <a class="btn btn-dark" style="width:100%;justify-content:center;gap:8px" href="${esc(DL)}"><img src="img/download.png" width="18" height="18" alt="">Télécharger le logiciel</a>
     ${payBtns}
     <p class="muted" style="margin-top:14px">Gardez ce code précieusement : il sert à activer chaque poste de votre clinique.</p>
     <button class="btn btn-out" style="width:100%;justify-content:center;margin-top:6px" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button></div>`)
