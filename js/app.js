@@ -81,6 +81,7 @@ function successView(r, plan) {
 
 // ── Branchements ──
 ;['#hero-cta', '#final-cta', '#nav-cta', '#foot-cta'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openSignup('trial') } })
-;['#foot-dl'].forEach(s => { const el = $(s); if (el) el.href = DL })
+;['#foot-dl', '#dl-main'].forEach(s => { const el = $(s); if (el) el.href = DL })
+;['#dl-trial'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openSignup('trial') } })
 $('#burger').onclick = () => $('#menu').classList.toggle('open')
 document.querySelectorAll('#menu a[href^="#"]').forEach(a => a.onclick = () => $('#menu').classList.remove('open'))
