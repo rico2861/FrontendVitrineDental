@@ -49,7 +49,8 @@ function openSignup(plan) {
     <div class="field"><label>Téléphone</label><input id="s-phone"></div>
     <div class="field"><label>Ville</label><input id="s-city"></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" id="s-go">Créer mon compte d’essai</button>
-    <p class="muted" style="text-align:center;margin:12px 0 0">Déjà client ? Activez directement dans le logiciel.</p>`)
+    <p class="muted" style="text-align:center;margin:12px 0 0">Déjà client ? <a href="#" id="to-resend" style="color:var(--brand);font-weight:600">Récupérer mon code</a></p>`)
+  document.getElementById('to-resend').onclick = e => { e.preventDefault(); openResend() }
   $('#s-go').onclick = async e => {
     const err = $('#s-err'); err.style.display = 'none'; e.target.disabled = true
     try {
@@ -79,9 +80,22 @@ function successView(r, plan) {
   }
 }
 
+function openResend() {
+  modal(`<h3>Récupérer mon code</h3><p class="muted">Entrez l'e-mail de votre clinique : nous vous renvoyons votre code d'activation par e-mail.</p>
+    <div class="err" id="r-err" style="display:none"></div>
+    <div class="field"><label>E-mail de la clinique</label><input id="r-email" type="email"></div>
+    <button class="btn btn-brand" style="width:100%;justify-content:center" id="r-go">Envoyer mon code</button>`)
+  $('#r-go').onclick = async e => {
+    const err = $('#r-err'); err.style.display = 'none'; e.target.disabled = true
+    try { const r = await api('/api/resend-code', { email: $('#r-email').value.trim() }); modal(`<div class="success"><h3 style="display:flex;align-items:center;gap:8px"><img src="img/check.png" width="24" alt=""> C'est envoyé</h3><p class="muted">${esc(r.message || 'Vérifiez votre boîte e-mail.')}</p><button class="btn btn-light" style="width:100%;justify-content:center;margin-top:10px" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button></div>`) }
+    catch (ex) { err.textContent = ex.message; err.style.display = 'block'; e.target.disabled = false }
+  }
+}
+
 // ── Branchements ──
 ;['#hero-cta', '#final-cta', '#nav-cta', '#foot-cta'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openSignup('trial') } })
 ;['#foot-dl', '#dl-main'].forEach(s => { const el = $(s); if (el) el.href = DL })
 ;['#dl-trial'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openSignup('trial') } })
+;['#foot-code'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openResend() } })
 $('#burger').onclick = () => $('#menu').classList.toggle('open')
 document.querySelectorAll('#menu a[href^="#"]').forEach(a => a.onclick = () => $('#menu').classList.remove('open'))
