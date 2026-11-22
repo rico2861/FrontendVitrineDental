@@ -119,10 +119,22 @@ async function openPortal(preselect) {
   const payHtml = (me.payments || []).length ? `<h4 class="p-ttl">Mes paiements</h4><div class="paylist">${me.payments.map(p => `<div class="payrow"><span>${fdate(p.created_at)} · ${p.method}</span><strong>${money(p.amount, p.currency)}</strong><span class="badge ${p.status === 'confirmed' ? 'ok' : p.status === 'rejected' || p.status === 'failed' ? 'bad' : 'warn'}">${p.status === 'confirmed' ? 'Confirmé' : p.status === 'pending' ? 'En attente' : p.status === 'failed' ? 'Échoué' : 'Rejeté'}</span></div>`).join('')}</div>` : ''
   const cur = PRICES
   const trialBtn = me.trial_used ? '' : `<button class="pbtn" data-p="trial"><strong>Essai gratuit</strong><span>15 jours · immédiat</span></button>`
+  const appUrl = (window.DL_APP || '').replace(/\/+$/, '')
+  const hasLic = (me.licenses || []).some(l => l.status === 'active')
+  const saHtml = hasLic ? `<h4 class="p-ttl">Mon compte super-admin</h4>
+    <div class="sa-card">
+      <p class="muted" style="margin:0 0 14px">Créez le compte <b>propriétaire (super-admin)</b> de votre clinique. Vous vous connecterez ensuite au logiciel web avec votre <b>clé de licence</b> et un <b>code reçu par e-mail</b>.</p>
+      <div class="err" id="sa-err" style="display:none"></div>
+      <div class="field"><label>E-mail du super-admin</label><input id="sa-email" type="email" value="${esc(me.clinic.email || '')}"></div>
+      <div class="field"><label>Mot de passe</label><input id="sa-pw" type="password" placeholder="12 caractères minimum"></div>
+      <div class="field"><label>Confirmer le mot de passe</label><input id="sa-pw2" type="password"></div>
+      <button class="btn btn-brand wfull" id="sa-go">Créer mon super-admin</button>
+    </div>` : ''
   paint(`<div class="portal">
     <div class="p-head"><div><h3>${esc(me.clinic.name)}</h3><p class="muted">${esc(me.clinic.email)} ${statusBadge}</p></div><button class="lnk" id="logout">Déconnexion</button></div>
     <div class="err" id="p-err" style="display:none"></div>
     <h4 class="p-ttl">Mes licences</h4><div id="lic-list">${licHtml}</div>
+    ${saHtml}
     <h4 class="p-ttl">Choisir une formule</h4>
     <div class="portal-plans">${trialBtn}
       <button class="pbtn" data-p="1m"><strong>Mensuel</strong><span>${money(cur['1m'], cur.currency)} / mois</span></button>
@@ -132,6 +144,22 @@ async function openPortal(preselect) {
   $('#logout').onclick = () => { clearToken(); if (MOUNT) openAuth('login'); else closeModal() }
   document.querySelectorAll('.copy').forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.k); b.textContent = 'Copié ✓'; setTimeout(() => b.textContent = 'Copier', 1500) })
   document.querySelectorAll('.pbtn').forEach(b => b.onclick = () => choosePlan(b.dataset.p))
+  const saGo = $('#sa-go'); if (saGo) saGo.onclick = async () => {
+    const email = $('#sa-email').value.trim(), pw = $('#sa-pw').value, pw2 = $('#sa-pw2').value
+    $('#sa-err').style.display = 'none'
+    if (pw.length < 12) return showErr('sa-err', 'Mot de passe : 12 caractères minimum.')
+    if (pw !== pw2) return showErr('sa-err', 'Les deux mots de passe ne correspondent pas.')
+    saGo.disabled = true
+    try {
+      const r = await api('/api/account/provision-admin', { auth: true, body: { email, password: pw } })
+      paint(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> Super-admin ${r.created ? 'créé' : 'déjà actif'}</h3>
+        <p class="muted">Connectez-vous au logiciel web avec votre <b>clé de licence</b> et le <b>code reçu par e-mail</b> (${esc(email)}).</p>
+        <div class="field"><label>Votre clé de licence</label><div class="code">${esc(r.license_key)}</div></div>
+        ${appUrl ? `<a class="btn btn-brand wfull" href="${esc(appUrl)}" target="_blank" rel="noopener">Ouvrir le logiciel</a>` : ''}
+        <button class="btn btn-light wfull mt" id="sa-back">Retour à mon espace</button></div>`)
+      const bk = document.getElementById('sa-back'); if (bk) bk.onclick = () => openPortal()
+    } catch (e) { saGo.disabled = false; showErr('sa-err', e.message) }
+  }
   if (preselect && (preselect === '1m' || preselect === '1y' || (preselect === 'trial' && !me.trial_used))) choosePlan(preselect)
 }
 

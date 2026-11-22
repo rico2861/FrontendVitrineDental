@@ -3,3 +3,5 @@
 window.DL_API = 'https://backenddental.onrender.com'
 // Lien de téléchargement du logiciel (release GitHub ou fichier hébergé).
 window.DL_DOWNLOAD = 'https://github.com/rico2861/Dental/releases/latest'
+// Adresse du logiciel web partagé (instance clinique) — pour « Ouvrir le logiciel ».
+window.DL_APP = 'https://dentalclient-web.onrender.com'
