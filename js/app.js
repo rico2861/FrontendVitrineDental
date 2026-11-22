@@ -77,6 +77,7 @@ function openAuth(tab, plan) {
     <div class="field"><label>E-mail</label><input id="a-email" type="email" autocomplete="email"></div>
     <div class="field"><label>Mot de passe</label><input id="a-pass" type="password" autocomplete="new-password" placeholder="6 caractères minimum"></div>
     <div class="row2"><div class="field"><label>Téléphone</label><input id="a-phone"></div><div class="field"><label>Ville</label><input id="a-city"></div></div>
+    <div class="field"><label>Adresse de la clinique</label><input id="a-address" autocomplete="street-address" placeholder="rue, quartier…"></div>
     <button class="btn btn-primary wfull" id="a-go">Créer mon compte</button>`
   const paneLog = () => `<p class="muted">Connectez-vous pour choisir un plan, payer et retrouver vos licences.</p>
     <div class="field"><label>E-mail</label><input id="a-email" type="email" autocomplete="email"></div>
@@ -91,7 +92,7 @@ function openAuth(tab, plan) {
       e.target.disabled = true; $('#a-err').style.display = 'none'
       try {
         if (t === 'register') {
-          const r = await api('/api/account/register', { body: { name: $('#a-name').value.trim(), email: $('#a-email').value.trim(), password: $('#a-pass').value, phone: $('#a-phone').value.trim(), city: $('#a-city').value.trim() } })
+          const r = await api('/api/account/register', { body: { name: $('#a-name').value.trim(), email: $('#a-email').value.trim(), password: $('#a-pass').value, phone: $('#a-phone').value.trim(), city: $('#a-city').value.trim(), address: $('#a-address').value.trim() } })
           setToken(r.token)
         } else {
           const r = await api('/api/account/login', { body: { email: $('#a-email').value.trim(), password: $('#a-pass').value } })
