@@ -166,15 +166,39 @@ function openPay(plan, amount, currency) {
   }
 }
 
-function bankView(v) {
+async function bankView(v) {
+  modal(`<h3>Virement bancaire</h3><p class="muted">Chargement des comptes…</p>`)
+  let accounts = []
+  try { accounts = await api('/api/bank-accounts') } catch {}
+  const accHtml = accounts.length
+    ? accounts.map(b => `<div class="bank">
+        <div><span>${esc(b.bank_name)}</span><strong>${esc(b.number)}</strong></div>
+        <div><span>Titulaire</span><strong>${esc(b.holder)}</strong></div>
+        <div><span>Devise</span><strong>${esc(b.currency)}</strong></div>
+        ${b.note ? `<div><span>Note</span><strong>${esc(b.note)}</strong></div>` : ''}</div>`).join('')
+    : `<p class="muted">Les coordonnées bancaires seront communiquées par notre équipe. Contactez <a class="lnk" href="mailto:dentalassist@gmail.com">dentalassist@gmail.com</a>.</p>`
   modal(`<h3>Virement bancaire</h3>
-    <p class="muted">Effectuez le virement puis envoyez la preuve. Dès réception, nous confirmons et votre clé est générée automatiquement.</p>
-    <div class="bank">
-      <div><span>Montant</span><strong>${money(v.amount, v.currency)}</strong></div>
-      <div><span>Référence à indiquer</span><strong>${esc(v.reference)}</strong></div>
-    </div>
-    <p class="muted">Envoyez la preuve de virement à <a class="lnk" href="mailto:support@dealpam.com?subject=Virement%20${esc(v.reference)}">support@dealpam.com</a> en précisant la référence <strong>${esc(v.reference)}</strong>.</p>
-    <button class="btn btn-light wfull mt" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button>`)
+    <p class="muted">Montant : <strong>${money(v.amount, v.currency)}</strong> · Référence : <strong>${esc(v.reference)}</strong></p>
+    <p class="muted">Virez le montant sur l'un de ces comptes en indiquant bien la référence <strong>${esc(v.reference)}</strong>, puis téléversez votre preuve :</p>
+    ${accHtml}
+    <div class="err" id="pf-err" style="display:none"></div>
+    <div class="field"><label>Preuve de virement (image ou PDF)</label><input type="file" id="pf-file" accept="image/*,application/pdf"></div>
+    <button class="btn btn-primary wfull" id="pf-go">Envoyer la preuve</button>
+    <p class="muted center mt">Dès validation par notre équipe, votre clé de licence est générée et envoyée par e-mail.</p>`)
+  $('#pf-go').onclick = async e => {
+    const f = $('#pf-file').files[0]
+    if (!f) return showErr('pf-err', 'Choisissez un fichier.')
+    if (f.size > 8 * 1024 * 1024) return showErr('pf-err', 'Fichier trop lourd (8 Mo maximum).')
+    e.target.disabled = true; $('#pf-err').style.display = 'none'
+    try {
+      const dataBase64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f) })
+      await api('/api/account/pay/proof', { auth: true, body: { payment_id: v.payment_id, filename: f.name, contentType: f.type, dataBase64 } })
+      modal(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> Preuve envoyée</h3>
+        <p class="muted">Merci ! Notre équipe valide votre virement (réf <strong>${esc(v.reference)}</strong>) et votre clé de licence vous sera envoyée par e-mail dès confirmation.</p>
+        <button class="btn btn-light wfull mt" id="toportal2">Voir mon espace</button></div>`)
+      document.getElementById('toportal2').onclick = () => openPortal()
+    } catch (ex) { showErr('pf-err', ex.message); e.target.disabled = false }
+  }
 }
 
 function licenseReady(key, plan, starts, ends) {
