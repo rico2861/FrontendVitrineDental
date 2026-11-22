@@ -1,7 +1,7 @@
-// ═══ DENTAL — Vitrine (logique) ═══════════════════════════════════════
-// Parcours : créer un compte (mot de passe) → choisir un plan → payer →
-// licence générée APRÈS paiement. La vitrine ne parle jamais à la base :
-// tout passe par le backend (API). Le jeton de session reste en localStorage.
+// ═══ Dental Assist — Vitrine (logique multi-pages) ════════════════════════
+// Parcours : compte (mot de passe) → plan → paiement → licence. La vitrine ne
+// parle jamais à la base : tout passe par le backend. Jeton en localStorage.
+// « Mon espace » (espace.html) affiche connexion/portail en pleine page.
 const API = (window.DL_API || '').replace(/\/+$/, '')
 const DL = window.DL_DOWNLOAD || '#'
 const $ = s => document.querySelector(s)
@@ -10,7 +10,6 @@ const money = (n, c = 'HTG') => new Intl.NumberFormat('fr-FR').format(n) + ' ' +
 const fdate = d => d ? new Date(d).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : '—'
 const planLabel = p => p === '1y' ? 'Abonnement 1 an' : p === '1m' ? 'Abonnement 1 mois' : 'Essai 15 jours'
 
-// ── Session ──
 const TKEY = 'dl_token'
 const token = () => localStorage.getItem(TKEY) || ''
 const setToken = t => localStorage.setItem(TKEY, t)
@@ -25,53 +24,55 @@ const api = async (p, { body, auth, method } = {}) => {
   return j
 }
 
-// ── Fonctionnalités ──
+// ── Fonctionnalités (page fonctionnalites.html) ──
 const FEATURES = [
   ['patients', 'Patients & dossiers', 'Fiches complètes, antécédents, schéma dentaire (odontogramme), documents et consentements.'],
   ['calendar', 'Rendez-vous & salle d’attente', 'Agenda, file d’attente en temps réel, rappels et suivi des présences.'],
   ['billing', 'Facturation multi-devises', 'Devis, factures, encaissements, taux du jour, dettes et relances.'],
   ['caisse', 'Caisse', 'Mouvements, transferts, clôture de caisse et dépenses, par compte.'],
   ['stock', 'Stock & prothèses', 'Suivi du matériel, commandes, et gestion des travaux de laboratoire.'],
-  ['payroll', 'Paie & commissions', 'Salaires, commissions par praticien, déductions et revisions.'],
+  ['payroll', 'Paie & commissions', 'Salaires, commissions par praticien, déductions et révisions.'],
   ['reports', 'Rapports PDF & Excel', 'Tableaux de bord, statistiques, exports pour la comptabilité.'],
   ['security', 'Sécurité renforcée', 'Rôles, permissions, 2FA, journal d’audit, chiffrement des données.'],
   ['backups', 'Sauvegardes', 'Copies automatiques locales et en ligne, récupérables en un clic.']
 ]
-$('#feat-grid').innerHTML = FEATURES.map(([i, t, d]) => `<div class="feat"><div class="ic"><img src="img/${i}.png" width="26" height="26" alt=""></div><h3>${t}</h3><p>${d}</p></div>`).join('')
+function renderFeatures() {
+  const g = $('#feat-grid'); if (!g) return
+  g.innerHTML = FEATURES.map(([i, t, d]) => `<div class="feat"><div class="ic"><img src="img/${i}.png" width="26" height="26" alt=""></div><h3>${t}</h3><p>${d}</p></div>`).join('')
+}
 
-// ── Tarifs (depuis le backend) ──
+// ── Tarifs ──
 let PRICES = { '1m': 1500, '1y': 15000, currency: 'HTG' }
 async function loadPlans() {
-  try { PRICES = await api('/api/prices') } catch { /* valeurs par défaut */ }
+  try { PRICES = await api('/api/prices') } catch { }
+  const el = $('#plans'); if (!el) return
   const plans = [
     { key: 'trial', name: 'Essai', price: 'Gratuit', unit: '15 jours', desc: 'Toutes les fonctionnalités, sans carte.', feats: ['Accès complet', 'Jusqu’à 2 postes', 'Support de démarrage'], cta: 'Commencer l’essai', hot: false },
     { key: '1m', name: 'Mensuel', price: money(PRICES['1m'], PRICES.currency), unit: '/ mois', desc: 'La souplesse du mois par mois.', feats: ['Tout l’essai, sans limite de temps', 'Sauvegarde en ligne', 'Mises à jour incluses'], cta: 'Choisir le mensuel', hot: true },
     { key: '1y', name: 'Annuel', price: money(PRICES['1y'], PRICES.currency), unit: '/ an', desc: 'Le meilleur tarif à l’année.', feats: ['2 mois offerts* vs mensuel', 'Sauvegarde en ligne', 'Priorité au support'], cta: 'Choisir l’annuel', hot: false }
   ]
-  $('#plans').innerHTML = plans.map(p => `<div class="plan ${p.hot ? 'hot' : ''}">${p.hot ? '<span class="tag2">Le plus choisi</span>' : ''}
+  el.innerHTML = plans.map(p => `<div class="plan ${p.hot ? 'hot' : ''}">${p.hot ? '<span class="tag2">Le plus choisi</span>' : ''}
     <h3>${p.name}</h3><div class="price">${p.price} <small>${p.unit}</small></div>
     <p class="desc">${p.desc}</p><ul>${p.feats.map(f => `<li>${f}</li>`).join('')}</ul>
-    <button class="btn ${p.hot ? 'btn-brand' : 'btn-light'}" data-plan="${p.key}">${p.cta}</button></div>`).join('')
-  document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => enter(b.dataset.plan))
+    <a class="btn ${p.hot ? 'btn-brand' : 'btn-light'}" href="espace.html?cta=register&plan=${p.key}">${p.cta}</a></div>`).join('')
 }
-loadPlans()
 
-// ── Modal ──
-function modal(html) { const r = $('#modal-root'); r.innerHTML = `<div class="ov" id="ov"><div class="modal">${html}</div></div>`; $('#ov').onclick = e => { if (e.target.id === 'ov') r.innerHTML = '' }; return r }
-function closeModal() { $('#modal-root').innerHTML = '' }
+// ── Affichage : modal (pages marketing) OU inline (page Mon espace) ──
+let MOUNT = null
+function modal(html) { const r = $('#modal-root'); if (!r) { alert('…'); return } r.innerHTML = `<div class="ov" id="ov"><div class="modal">${html}</div></div>`; $('#ov').onclick = e => { if (e.target.id === 'ov') r.innerHTML = '' }; return r }
+function closeModal() { const r = $('#modal-root'); if (r) r.innerHTML = '' }
+function paint(html) { if (MOUNT) { MOUNT.innerHTML = `<div class="espace-card">${html}</div>`; return MOUNT } return modal(html) }
 const showErr = (id, msg) => { const e = document.getElementById(id); if (e) { e.textContent = msg; e.style.display = 'block' } }
 
-// ── Point d'entrée : connecté → espace ; sinon → compte / connexion ──
+// ── Point d'entrée ──
 async function enter(plan) {
   if (token()) { try { return await openPortal(plan) } catch (e) { if (e.status === 401) clearToken(); else { alert(e.message); return } } }
   openAuth('register', plan)
 }
 
-// ── Création de compte / connexion (onglets) ──
 function openAuth(tab, plan) {
-  modal(`<div class="tabs"><button class="tab ${tab === 'register' ? 'on' : ''}" id="t-reg">Créer un compte</button><button class="tab ${tab === 'login' ? 'on' : ''}" id="t-log">Se connecter</button></div>
-    <div class="err" id="a-err" style="display:none"></div>
-    <div id="pane"></div>`)
+  paint(`<div class="tabs"><button class="tab ${tab === 'register' ? 'on' : ''}" id="t-reg">Créer un compte</button><button class="tab ${tab === 'login' ? 'on' : ''}" id="t-log">Se connecter</button></div>
+    <div class="err" id="a-err" style="display:none"></div><div id="pane"></div>`)
   const paneReg = () => `<p class="muted">Créez votre compte clinique. Vous choisirez votre formule juste après.</p>
     <div class="field"><label>Nom de la clinique</label><input id="a-name" autocomplete="organization"></div>
     <div class="field"><label>E-mail</label><input id="a-email" type="email" autocomplete="email"></div>
@@ -106,33 +107,29 @@ function openAuth(tab, plan) {
   render(tab)
 }
 
-// ── Espace client ──
 async function openPortal(preselect) {
   const me = await api('/api/account/me', { auth: true })
   const sub = me.subscription
-  const statusBadge = sub ? `<span class="badge ${sub.status === 'expired' ? 'bad' : sub.status === 'grace' ? 'warn' : 'ok'}">${sub.status === 'trial' ? 'Essai en cours' : sub.status === 'active' ? 'Abonnement actif' : sub.status === 'grace' ? 'Période de grâce' : 'Expiré'}</span>`
-    : `<span class="badge warn">Aucun plan</span>`
+  const statusBadge = sub ? `<span class="badge ${sub.status === 'expired' ? 'bad' : sub.status === 'grace' ? 'warn' : 'ok'}">${sub.status === 'trial' ? 'Essai en cours' : sub.status === 'active' ? 'Abonnement actif' : sub.status === 'grace' ? 'Période de grâce' : 'Expiré'}</span>` : `<span class="badge warn">Aucun plan</span>`
   const licHtml = me.licenses.length ? me.licenses.map(l => `<div class="lic">
       <div class="lic-top"><span class="lic-plan">${planLabel(l.plan)}</span><span class="badge ${l.status === 'active' ? 'ok' : 'bad'}">${l.status === 'active' ? 'Active' : l.status === 'revoked' ? 'Révoquée' : 'Expirée'}</span></div>
       <div class="lic-key"><code>${esc(l.key)}</code><button class="copy" data-k="${esc(l.key)}">Copier</button></div>
       <div class="lic-meta">Du ${fdate(l.starts_at)} au ${fdate(l.ends_at)}</div></div>`).join('')
-    : `<p class="muted">Aucune licence pour l’instant. Choisissez une formule ci-dessous — votre clé sera générée immédiatement pour l’essai, ou après paiement pour un abonnement.</p>`
+    : `<p class="muted">Aucune licence pour l’instant. Choisissez une formule ci-dessous — clé immédiate pour l’essai, ou après paiement pour un abonnement.</p>`
+  const payHtml = (me.payments || []).length ? `<h4 class="p-ttl">Mes paiements</h4><div class="paylist">${me.payments.map(p => `<div class="payrow"><span>${fdate(p.created_at)} · ${p.method}</span><strong>${money(p.amount, p.currency)}</strong><span class="badge ${p.status === 'confirmed' ? 'ok' : p.status === 'rejected' || p.status === 'failed' ? 'bad' : 'warn'}">${p.status === 'confirmed' ? 'Confirmé' : p.status === 'pending' ? 'En attente' : p.status === 'failed' ? 'Échoué' : 'Rejeté'}</span></div>`).join('')}</div>` : ''
   const cur = PRICES
   const trialBtn = me.trial_used ? '' : `<button class="pbtn" data-p="trial"><strong>Essai gratuit</strong><span>15 jours · immédiat</span></button>`
-  modal(`<div class="portal">
+  paint(`<div class="portal">
     <div class="p-head"><div><h3>${esc(me.clinic.name)}</h3><p class="muted">${esc(me.clinic.email)} ${statusBadge}</p></div><button class="lnk" id="logout">Déconnexion</button></div>
     <div class="err" id="p-err" style="display:none"></div>
-    <h4 class="p-ttl">Mes licences</h4>
-    <div id="lic-list">${licHtml}</div>
+    <h4 class="p-ttl">Mes licences</h4><div id="lic-list">${licHtml}</div>
     <h4 class="p-ttl">Choisir une formule</h4>
-    <div class="portal-plans">
-      ${trialBtn}
+    <div class="portal-plans">${trialBtn}
       <button class="pbtn" data-p="1m"><strong>Mensuel</strong><span>${money(cur['1m'], cur.currency)} / mois</span></button>
-      <button class="pbtn hot" data-p="1y"><strong>Annuel</strong><span>${money(cur['1y'], cur.currency)} / an</span></button>
-    </div>
-    <a class="btn btn-dark wfull mt" href="${esc(DL)}"><img src="img/download.png" width="18" height="18" alt="">Télécharger le logiciel</a>
-  </div>`)
-  $('#logout').onclick = () => { clearToken(); closeModal() }
+      <button class="pbtn hot" data-p="1y"><strong>Annuel</strong><span>${money(cur['1y'], cur.currency)} / an</span></button></div>
+    ${payHtml}
+    <a class="btn btn-dark wfull mt" href="${esc(DL)}"><img src="img/download.png" width="18" height="18" alt="">Télécharger le logiciel</a></div>`)
+  $('#logout').onclick = () => { clearToken(); if (MOUNT) openAuth('login'); else closeModal() }
   document.querySelectorAll('.copy').forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.k); b.textContent = 'Copié ✓'; setTimeout(() => b.textContent = 'Copier', 1500) })
   document.querySelectorAll('.pbtn').forEach(b => b.onclick = () => choosePlan(b.dataset.p))
   if (preselect && (preselect === '1m' || preselect === '1y' || (preselect === 'trial' && !me.trial_used))) choosePlan(preselect)
@@ -141,15 +138,14 @@ async function openPortal(preselect) {
 async function choosePlan(plan) {
   try {
     const r = await api('/api/account/plan', { auth: true, body: { plan } })
-    if (r.license_key) return licenseReady(r.license_key, r.plan || plan, r.starts_at, r.ends_at)   // essai : clé immédiate
-    if (r.needs_payment) return openPay(plan, r.amount, r.currency)                                   // payant : payer d'abord
+    if (r.license_key) return licenseReady(r.license_key, r.plan || plan, r.starts_at, r.ends_at)
+    if (r.needs_payment) return openPay(plan, r.amount, r.currency)
   } catch (e) { if (e.status === 401) { clearToken(); openAuth('login', plan) } else showErr('p-err', e.message) }
 }
 
-// ── Paiement (licence générée seulement après confirmation) ──
 function openPay(plan, amount, currency) {
-  modal(`<h3>Paiement — ${planLabel(plan)}</h3>
-    <p class="muted">Montant : <strong>${money(amount, currency)}</strong>. Votre clé de licence sera générée dès le paiement confirmé, jamais avant.</p>
+  paint(`<h3>Paiement — ${planLabel(plan)}</h3>
+    <p class="muted">Montant : <strong>${money(amount, currency)}</strong>. Votre clé est générée dès le paiement confirmé, jamais avant.</p>
     <div class="err" id="pay-err" style="display:none"></div>
     <button class="btn btn-primary wfull" id="pay-mc"><img src="img/key.png" width="18" height="18" alt="">Payer avec MonCash</button>
     <button class="btn btn-light wfull mt" id="pay-vir">Payer par virement bancaire</button>
@@ -160,31 +156,28 @@ function openPay(plan, amount, currency) {
     try { const p = await api('/api/account/pay/moncash', { auth: true, body: { plan } }); location.href = p.redirectUrl }
     catch (ex) { showErr('pay-err', ex.message); e.target.disabled = false; e.target.textContent = 'Payer avec MonCash' }
   }
-  $('#pay-vir').onclick = async () => {
-    try { const v = await api('/api/account/pay/virement', { auth: true, body: { plan } }); bankView(v) }
-    catch (ex) { showErr('pay-err', ex.message) }
-  }
+  $('#pay-vir').onclick = async () => { try { const v = await api('/api/account/pay/virement', { auth: true, body: { plan } }); bankView(v) } catch (ex) { showErr('pay-err', ex.message) } }
 }
 
 async function bankView(v) {
-  modal(`<h3>Virement bancaire</h3><p class="muted">Chargement des comptes…</p>`)
+  paint(`<h3>Virement bancaire</h3><p class="muted">Chargement des comptes…</p>`)
   let accounts = []
-  try { accounts = await api('/api/bank-accounts') } catch {}
-  const accHtml = accounts.length
-    ? accounts.map(b => `<div class="bank">
-        <div><span>${esc(b.bank_name)}</span><strong>${esc(b.number)}</strong></div>
-        <div><span>Titulaire</span><strong>${esc(b.holder)}</strong></div>
-        <div><span>Devise</span><strong>${esc(b.currency)}</strong></div>
-        ${b.note ? `<div><span>Note</span><strong>${esc(b.note)}</strong></div>` : ''}</div>`).join('')
+  try { accounts = await api('/api/bank-accounts') } catch { }
+  const accHtml = accounts.length ? accounts.map(b => `<div class="bank">
+      <div><span>${esc(b.bank_name)}</span><strong>${esc(b.number)}</strong></div>
+      <div><span>Titulaire</span><strong>${esc(b.holder)}</strong></div>
+      <div><span>Devise</span><strong>${esc(b.currency)}</strong></div>
+      ${b.note ? `<div><span>Note</span><strong>${esc(b.note)}</strong></div>` : ''}</div>`).join('')
     : `<p class="muted">Les coordonnées bancaires seront communiquées par notre équipe. Contactez <a class="lnk" href="mailto:dentalassist@gmail.com">dentalassist@gmail.com</a>.</p>`
-  modal(`<h3>Virement bancaire</h3>
+  paint(`<h3>Virement bancaire</h3>
     <p class="muted">Montant : <strong>${money(v.amount, v.currency)}</strong> · Référence : <strong>${esc(v.reference)}</strong></p>
-    <p class="muted">Virez le montant sur l'un de ces comptes en indiquant bien la référence <strong>${esc(v.reference)}</strong>, puis téléversez votre preuve :</p>
+    <p class="muted">Virez le montant sur l'un de ces comptes en indiquant la référence <strong>${esc(v.reference)}</strong>, puis téléversez votre preuve :</p>
     ${accHtml}
     <div class="err" id="pf-err" style="display:none"></div>
     <div class="field"><label>Preuve de virement (image ou PDF)</label><input type="file" id="pf-file" accept="image/*,application/pdf"></div>
     <button class="btn btn-primary wfull" id="pf-go">Envoyer la preuve</button>
-    <p class="muted center mt">Dès validation par notre équipe, votre clé de licence est générée et envoyée par e-mail.</p>`)
+    <p class="muted center mt"><a href="#" class="lnk" id="back-portal2">← Retour à mon espace</a></p>`)
+  document.getElementById('back-portal2').onclick = e => { e.preventDefault(); openPortal() }
   $('#pf-go').onclick = async e => {
     const f = $('#pf-file').files[0]
     if (!f) return showErr('pf-err', 'Choisissez un fichier.')
@@ -193,7 +186,7 @@ async function bankView(v) {
     try {
       const dataBase64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f) })
       await api('/api/account/pay/proof', { auth: true, body: { payment_id: v.payment_id, filename: f.name, contentType: f.type, dataBase64 } })
-      modal(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> Preuve envoyée</h3>
+      paint(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> Preuve envoyée</h3>
         <p class="muted">Merci ! Notre équipe valide votre virement (réf <strong>${esc(v.reference)}</strong>) et votre clé de licence vous sera envoyée par e-mail dès confirmation.</p>
         <button class="btn btn-light wfull mt" id="toportal2">Voir mon espace</button></div>`)
       document.getElementById('toportal2').onclick = () => openPortal()
@@ -202,7 +195,7 @@ async function bankView(v) {
 }
 
 function licenseReady(key, plan, starts, ends) {
-  modal(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" height="24" alt=""> Votre clé est prête</h3>
+  paint(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" height="24" alt=""> Votre clé est prête</h3>
     <p class="muted">${planLabel(plan)}${ends ? ` · valable jusqu’au ${fdate(ends)}` : ''}. Saisissez-la dans le logiciel pour activer vos postes.</p>
     <div class="code">${esc(key)}</div>
     <button class="btn btn-brand wfull" id="cp">Copier la clé</button>
@@ -212,25 +205,32 @@ function licenseReady(key, plan, starts, ends) {
   $('#to-portal').onclick = () => openPortal()
 }
 
-// ── Récupérer sa clé par e-mail ──
 function openResend() {
-  modal(`<h3>Recevoir ma clé par e-mail</h3><p class="muted">Entrez l'e-mail de votre compte : nous renvoyons votre clé de licence active.</p>
+  paint(`<h3>Recevoir ma clé par e-mail</h3><p class="muted">Entrez l'e-mail de votre compte : nous renvoyons votre clé de licence active.</p>
     <div class="err" id="r-err" style="display:none"></div>
     <div class="field"><label>E-mail du compte</label><input id="r-email" type="email"></div>
-    <button class="btn btn-brand wfull" id="r-go">Envoyer ma clé</button>`)
+    <button class="btn btn-brand wfull" id="r-go">Envoyer ma clé</button>
+    <p class="muted center mt"><a href="#" class="lnk" id="r-back">← Retour</a></p>`)
+  const rb = document.getElementById('r-back'); if (rb) rb.onclick = e => { e.preventDefault(); openAuth('login') }
   $('#r-go').onclick = async e => {
     e.target.disabled = true; $('#r-err').style.display = 'none'
-    try { const r = await api('/api/resend-code', { body: { email: $('#r-email').value.trim() } }); modal(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> C'est envoyé</h3><p class="muted">${esc(r.message || 'Vérifiez votre boîte e-mail.')}</p><button class="btn btn-light wfull mt" onclick="document.getElementById('modal-root').innerHTML=''">Fermer</button></div>`) }
+    try { const r = await api('/api/resend-code', { body: { email: $('#r-email').value.trim() } }); paint(`<div class="success"><h3 class="ic-h"><img src="img/check.png" width="24" alt=""> C'est envoyé</h3><p class="muted">${esc(r.message || 'Vérifiez votre boîte e-mail.')}</p><button class="btn btn-light wfull mt" id="rok">OK</button></div>`); document.getElementById('rok').onclick = () => openAuth('login') }
     catch (ex) { showErr('r-err', ex.message); e.target.disabled = false }
   }
 }
 
-// ── Branchements ──
-;['#hero-cta', '#final-cta', '#nav-cta', '#foot-cta'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); enter('trial') } })
-;['#foot-dl', '#dl-main'].forEach(s => { const el = $(s); if (el) el.href = DL })
-;['#dl-trial'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); enter('trial') } })
-;['#foot-code'].forEach(s => { const el = $(s); if (el) el.onclick = e => { e.preventDefault(); openResend() } })
-// Si déjà connecté, le bouton principal mène à l'espace
-if (token()) { const c = $('#nav-cta'); if (c) c.textContent = 'Mon espace' }
-$('#burger').onclick = () => $('#menu').classList.toggle('open')
-document.querySelectorAll('#menu a[href^="#"]').forEach(a => a.onclick = () => $('#menu').classList.remove('open'))
+// ── Initialisation selon la page ──
+renderFeatures()
+loadPlans()
+document.querySelectorAll('[data-dl]').forEach(a => a.href = DL)
+// Menu mobile
+const burger = $('#burger'); if (burger) burger.onclick = () => $('#menu')?.classList.toggle('open')
+document.querySelectorAll('#menu a[href]').forEach(a => a.onclick = () => $('#menu')?.classList.remove('open'))
+// Page « Mon espace »
+const espaceRoot = document.getElementById('espace-root')
+if (espaceRoot) {
+  MOUNT = espaceRoot
+  const params = new URLSearchParams(location.search)
+  if (token()) openPortal(params.get('plan'))
+  else openAuth(params.get('cta') === 'login' ? 'login' : 'register', params.get('plan'))
+}
