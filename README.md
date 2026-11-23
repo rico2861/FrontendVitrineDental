@@ -1,20 +1,15 @@
-# DENTAL LIGHT — Site vitrine (FrontendVitrineDental)
+# ⚠️ DÉPÔT RETIRÉ — Vitrine Dental Assist (déprécié)
 
-Site public : présentation, fonctionnalités, tarifs, **inscription d'essai (15 jours)**, paiement MonCash et téléchargement du logiciel. Statique, aucun build.
+Ce site vitrine **n'est plus utilisé**. Toutes ses fonctions (page d'accueil /
+présentation, création de compte, choix de formule, paiement MonCash / virement,
+espace client, création du super-admin) ont été **intégrées dans le site clinique**.
 
-## Configuration
-Éditez `js/config.js` :
-```js
-window.DL_API = 'https://votre-backend-saas'   // backend (vide = même origine)
-window.DL_DOWNLOAD = 'https://github.com/rico2861/Dental/releases/latest'
-```
-Côté backend, ajoutez l'URL de ce site dans `CORS_ORIGINS`.
+- **Frontend unique** : `rico2861/DentalClient` (déployé sur Vercel).
+- **Backend** : `rico2861/BackendDental` (Render).
 
-## Local
-```bash
-npx serve .    # ou: python3 -m http.server 8080
-```
-Tarifs via `GET /api/prices`, essai via `POST /api/signup`, paiement via `POST /api/pay/moncash`.
+Le visiteur arrive désormais directement sur la **page d'accueil publique** du site
+clinique, où il peut s'informer, créer un compte et payer, puis se connecter.
 
-## Déploiement
-Hébergement statique (Netlify, Vercel, Railway, Cloudflare Pages…) ou servi par le backend.
+➡️ **À faire** : supprimer l'ancien projet Vercel de cette vitrine (il fait doublon).
+
+Le code ci-dessous est conservé à titre de référence historique uniquement.
